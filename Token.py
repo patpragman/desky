@@ -1,6 +1,25 @@
-import operator
+from math import sin, cos, tan, degrees, radians
 from operator import add, sub, mul, truediv, floordiv, pow
 
+
+
+memory = {}
+
+def show_memory():
+    print(memory)
+
+def set_memory(name, value):
+    global memory
+    memory[name] = value
+    return 0
+
+def get_memory(name):
+    global memory
+    return memory[name]
+
+def print_with_return(x):
+    print(x)
+    return 0
 
 class Token:
 
@@ -15,9 +34,21 @@ class Token:
                  "-": sub,
                  "_": floordiv}
 
-    order_of_operations = ["^", "*", "/", "+", "-", "_"]
+    functions = {"abs": abs,
+                 "sin": sin,
+                 "cos": cos,
+                 "tan": tan,
+                 "rad": radians,
+                 "degrees": degrees,
+                 "print": lambda x: print_with_return(x),
+                 "get": lambda x: get_memory(x)}
 
+    two_functions = {"set": lambda x, y: set_memory(x, y),
+                     }
 
+    n_functions = {}
+
+    order_of_operations = ["^", "*", "/", "_", "+", "-"]
 
 
 class Tokenizer:
@@ -57,6 +88,14 @@ class Tokenizer:
             except:
                 working_list.append(token)
 
+
+        for index, token in enumerate(working_list):
+            # find negative numbers
+            if working_list[index] == "-":
+                if type(working_list[index - 1]) is str:
+                    working_list[index + 1] = -working_list[index + 1]
+                    working_list.pop(index)
+
         self.tokens = working_list
 
 
@@ -81,6 +120,9 @@ def parse_tokens(token_list, verbose=False) -> list:
     if verbose:
         print("Sub-problem:", token_list)
 
+    functions = Token.functions
+    two_functions = Token.two_functions
+    n_functions = Token.n_functions
 
     operators = Token.operators
     order_of_operations = Token.order_of_operations
@@ -88,12 +130,31 @@ def parse_tokens(token_list, verbose=False) -> list:
     # go through and parse the perens out...
     previous_list = token_list.copy()
     index = 0
+
+
     while index < len(previous_list):
         if type(previous_list[index]) is list:
-            previous_list[index] = parse_tokens(previous_list[index],  verbose=verbose)
+            if previous_list[index - 1] in two_functions:
+                f = two_functions[previous_list.pop(index - 1)]
+                args = previous_list.pop(index - 1)
+                address = args.pop(0)
+                y = parse_tokens(args, verbose=verbose)
+                f(address, y)
+            else:
+                previous_list[index] = parse_tokens(previous_list[index],  verbose=verbose)
+
         index += 1
 
-    output = []
+    for func in functions:
+        for i, token in enumerate(previous_list):
+            if token == func:
+                f = functions[func]
+
+                if previous_list[i + 1] is list:
+                    previous_list[i + 1] = previous_list[i + 1].pop(0)
+                    print("here", previous_list[i + 1])
+                previous_list[i] = f(parse_tokens(previous_list.pop(i + 1))[0])
+
     for op in order_of_operations:
         index = 0
         while index < len(previous_list):
