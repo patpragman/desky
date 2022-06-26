@@ -1,5 +1,5 @@
 import argparse
-from Token import Tokenizer, parse_tokens, show_memory
+from Token import Tokenizer, parse_tokens
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-m',
@@ -23,10 +23,8 @@ if __name__ == "__main__":
     if args.m:
         tokenizer = Tokenizer(args.m)
         result = parse_tokens(tokenizer.tokens, verbose=args.v)
-        show_memory()
     elif args.f:
         with open(args.f, "r") as file:
             for line in file.readlines():
                 tokenizer = Tokenizer(line)
                 result = parse_tokens(tokenizer.tokens, verbose=args.v)
-                show_memory()
