@@ -15,6 +15,28 @@ set<string> SAVED_CHARS = {"^", "*", "/", "+", "-", "(", ")"};
 set<string> WHITE_SPACE = {" ", "", "\t", "\n"};
 string OPEN_PERENS = "(";
 string CLOSE_PERENS = ")";
+set<string> ORDER_OF_OPERATORS = {"^", "*", "/", "+", "-"};
+
+string parse_operators(string left, string right, string op){
+
+    float fleft = stof(left);
+    float fright = stof(right);
+
+    if (op == "^"){
+        return to_string(pow(fleft, fright));
+    } else if (op == "*") {
+        return to_string(fleft * fright);
+    } else if (op == "/") {
+        return to_string(fleft / fright);
+    } else if (op == "+") {
+        return to_string(fleft + fright);
+    } else if (op == "-") {
+        return to_string(fleft - fright);
+    } else {
+        return "NONE!";
+    }
+}
+
 
 void printv(vector<string> v){
     vector<string>::iterator it = v.begin();
@@ -90,9 +112,11 @@ int get_steps_to_close_perens(vector<string> v){
 }
 
 string reduce(vector<string> &v){
-    string out;
 
     vector<string>::iterator vi = v.begin();
+
+    string target_operator(1, '+');
+
     while (v.size() >= 1){
         if (*vi == OPEN_PERENS){
             v.erase(vi);
@@ -105,21 +129,40 @@ string reduce(vector<string> &v){
             *vi = reduce(subvector); // this is the index with the close perens, so it's find to switch it out
         }
 
-        // now a for-loop to go through the 
+        string left = *vi; vi++;
+        string op = *vi; vi++;
+
+        if (*vi == OPEN_PERENS){
+            v.erase(vi);
+            vector<string> subvector;
+            while (*vi != CLOSE_PERENS){
+                subvector.push_back(*vi);
+                v.erase(vi);
+            }
+            // now recursively reduce the sub problems
+            *vi = reduce(subvector); // this is the index with the close perens, so it's find to switch it out
+        }
+
+        string right = *vi;
+
+        if (op == target_operator){
+
+        }
+
+        vi++; // to actually make the loop move forward along the vector
 
     }
 
-    return out;
+    return v.at(0);
 }
 
 
 int main(){
 
-    string s = "(5 + 10^10)";
+    string s = "(5 + 10)^10.4";
     vector<string> v = s_to_v(s);
     printv(v);
     cout << get_steps_to_close_perens(v) << endl;
-    reduce(v);
     printv(v);
     return 0;
 }
