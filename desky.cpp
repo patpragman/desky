@@ -15,7 +15,7 @@ set<string> SAVED_CHARS = {"^", "*", "/", "+", "-", "(", ")"};
 set<string> WHITE_SPACE = {" ", "", "\t", "\n"};
 string OPEN_PERENS = "(";
 string CLOSE_PERENS = ")";
-set<string> ORDER_OF_OPERATORS = {"^", "*", "/", "+", "-"};
+vector<string> ORDER_OF_OPERATORS = {"^", "*", "/", "+", "-"};
 
 string parse_operators(string left, string right, string op){
 
@@ -111,13 +111,34 @@ int get_steps_to_close_perens(vector<string> v){
     return index;
 }
 
-string reduce(vector<string> &v){
+void execute_op(vector<string> &v, string op) {
+    vector<string>::iterator vi = v.begin();
+    int index = 0;
+    while (index < v.size()){
+        if (*vi == op){
+            vi ++;
+            string right = *vi;
+            cout << "right: " << right << endl;
+            vi--; vi--; // go back two steps
+            *vi = parse_operators(*vi, right, op);
+            cout << "left: " << left << endl;
+            vi++; 
+            cout << *vi << endl;
+            v.erase(vi); v.erase(vi); // erase the next couple of things
+            v.shrink_to_fit();
+        }
+        vi++; index++;   
+    }
+}
 
+string reduce(vector<string> &v){
     vector<string>::iterator vi = v.begin();
 
-    string target_operator(1, '+');
+    while (v.size() > 1){
+        //cout << *vi << endl;
+        cout << "starting while loop for ";
+        printv(v);
 
-    while (v.size() >= 1){
         if (*vi == OPEN_PERENS){
             v.erase(vi);
             vector<string> subvector;
@@ -125,6 +146,9 @@ string reduce(vector<string> &v){
                 subvector.push_back(*vi);
                 v.erase(vi);
             }
+            cout << "sending sub problem: ";
+            printv(subvector);
+
             // now recursively reduce the sub problems
             *vi = reduce(subvector); // this is the index with the close perens, so it's find to switch it out
         }
@@ -133,36 +157,49 @@ string reduce(vector<string> &v){
         string op = *vi; vi++;
 
         if (*vi == OPEN_PERENS){
+            
             v.erase(vi);
             vector<string> subvector;
             while (*vi != CLOSE_PERENS){
                 subvector.push_back(*vi);
                 v.erase(vi);
             }
+            cout << "sending sub problem: ";
+            printv(subvector);
             // now recursively reduce the sub problems
             *vi = reduce(subvector); // this is the index with the close perens, so it's find to switch it out
         }
 
-        string right = *vi;
+        string right = *vi; vi++;
 
-        if (op == target_operator){
-
+        bool val = (target_operator.compare(op) == 0);
+        cout << val << "- op -" << op << " tgt " << target_operator << endl;
+        if (val){
+            cout << "this is weird:  " << op << " _____ " << target_operator << endl;
+            cout << left << "-L R-" << right <<endl;
+            cout << parse_operators(left, right, op) << endl;
+            // go back to the first operator you had
+            vi--; vi--; vi--;
+            *vi = parse_operators(left, right, op);
+            vi++; // now move up from that point
+            v.erase(vi); v.erase(vi);// now erase the next two strings then move back
+            cout << *vi << endl;
         }
 
-        vi++; // to actually make the loop move forward along the vector
 
     }
-
     return v.at(0);
 }
 
 
 int main(){
 
-    string s = "(5 + 10)^10.4";
+    string s = "5*10+5";
     vector<string> v = s_to_v(s);
     printv(v);
-    cout << get_steps_to_close_perens(v) << endl;
+    execute_op(v, "*");
+    execute_op(v, "+");
     printv(v);
+
     return 0;
 }
