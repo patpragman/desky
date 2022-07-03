@@ -1,11 +1,20 @@
-//
-// Created by patrickpragman on 6/25/22.
-//
+/*
+Ok.  I've been working on this since the 25th of June, and so far this is the best I can do.
+It can't do arbitarily deep nested perens.  That's a frustration I could not figure out.
+But I need to move on...
+
+This was a really good learning project.  I learned a lot from this.
+
+
+it handles order of operations and one level of perens... but that's it
+in python it was much easier to set this up - I was able to make it go arbitrarily deep
+easily
+*/
 #include <algorithm>
 #include <iostream>
 #include <string.h>
 #include <cstdlib>
-#include <cmath>
+#include <cmath> // not emplimented beyond POW... in the future other functions
 #include <vector>
 #include <set>
 #include <iterator>
@@ -16,6 +25,9 @@ set<string> WHITE_SPACE = {" ", "", "\t", "\n"};
 string OPEN_PERENS = "(";
 string CLOSE_PERENS = ")";
 vector<string> ORDER_OF_OPERATORS = {"^", "*", "/", "+", "-"};
+
+
+
 
 string parse_operators(string left, string right, string op){
 
@@ -91,115 +103,79 @@ vector<string> s_to_v(string s){
     return out;
 }
 
-int get_steps_to_close_perens(vector<string> v){
-    int index = 0;
-
-    vector<string>::iterator it = v.begin();
-    while (it != v.end()){
-        if (*it == CLOSE_PERENS){
-            return index;
-        }
-
-        index++;
-        it++;
-    }
-
-    index++;
-    if (index > v.size()){
-        throw invalid_argument("No closing perens!");
-    }
-    return index;
-}
-
 void execute_op(vector<string> &v, string op) {
     vector<string>::iterator vi = v.begin();
     int index = 0;
     while (index < v.size()){
+
         if (*vi == op){
-            vi ++;
+            vi--; // go left one slot
+            string left = *vi; vi++; // put that value in a varable then move to the right side of the equation
+            v.erase(vi);
             string right = *vi;
-            cout << "right: " << right << endl;
-            vi--; vi--; // go back two steps
-            *vi = parse_operators(*vi, right, op);
-            cout << "left: " << left << endl;
-            vi++; 
-            cout << *vi << endl;
-            v.erase(vi); v.erase(vi); // erase the next couple of things
-            v.shrink_to_fit();
-        }
-        vi++; index++;   
+            v.erase(vi);
+            string parsed = parse_operators(left, right, op);
+            // cout << left << op << right << "=" << parsed << endl; // debug
+            vi--; // go back two steps we want to change the current left value
+            *vi = parsed;
+            index = 0;
+            vi = v.begin(); // go back to the very beginning
+            // printv(v);
+        } else {
+        vi++; 
+        index++;}
     }
 }
 
-string reduce(vector<string> &v){
+void reduce(vector<string> &v){
     vector<string>::iterator vi = v.begin();
+    int index = 0;
 
-    while (v.size() > 1){
-        //cout << *vi << endl;
-        cout << "starting while loop for ";
-        printv(v);
-
+    // first break down the perens into individual problems and solve each one of those
+    while (index < v.size()){
         if (*vi == OPEN_PERENS){
-            v.erase(vi);
+            /*
+            if you encounter an open perens we need to:
+
+                find the closure of that perens
+                perform the action inside the perens
+
+            */
+
             vector<string> subvector;
-            while (*vi != CLOSE_PERENS){
+            v.erase(vi); // just cut it out
+            while (*vi != CLOSE_PERENS) {
                 subvector.push_back(*vi);
                 v.erase(vi);
             }
-            cout << "sending sub problem: ";
-            printv(subvector);
-
-            // now recursively reduce the sub problems
-            *vi = reduce(subvector); // this is the index with the close perens, so it's find to switch it out
-        }
-
-        string left = *vi; vi++;
-        string op = *vi; vi++;
-
-        if (*vi == OPEN_PERENS){
-            
             v.erase(vi);
-            vector<string> subvector;
-            while (*vi != CLOSE_PERENS){
-                subvector.push_back(*vi);
-                v.erase(vi);
-            }
-            cout << "sending sub problem: ";
-            printv(subvector);
             // now recursively reduce the sub problems
-            *vi = reduce(subvector); // this is the index with the close perens, so it's find to switch it out
-        }
-
-        string right = *vi; vi++;
-
-        bool val = (target_operator.compare(op) == 0);
-        cout << val << "- op -" << op << " tgt " << target_operator << endl;
-        if (val){
-            cout << "this is weird:  " << op << " _____ " << target_operator << endl;
-            cout << left << "-L R-" << right <<endl;
-            cout << parse_operators(left, right, op) << endl;
-            // go back to the first operator you had
-            vi--; vi--; vi--;
-            *vi = parse_operators(left, right, op);
-            vi++; // now move up from that point
-            v.erase(vi); v.erase(vi);// now erase the next two strings then move back
-            cout << *vi << endl;
-        }
-
-
+            reduce(subvector);
+            // now we need to insert the subvector back into the position it was at in the vector but reduced
+            v.insert(vi, begin(subvector), end(subvector));
+            //printv(v);
+            //*vi = subvector.at(0); // this is the index with the close perens, so it's find to switch it out
+            vi = v.begin();
+            index = 0;            
+        } else {
+        index++;
+        vi++;}
     }
-    return v.at(0);
+    // printv(v); // debug
+    // now we should have all of our problems as the values of perens - now do PEMDAS and continue to reduce
+    execute_op(v, "^");
+    execute_op(v, "*");
+    execute_op(v, "/");
+    execute_op(v, "+");
+    execute_op(v, "-");
 }
 
 
 int main(){
-
-    string s = "5*10+5";
+    string s;
+    cout << "enter a math problem: "; getline(cin, s);
     vector<string> v = s_to_v(s);
-    printv(v);
-    execute_op(v, "*");
-    execute_op(v, "+");
-    printv(v);
-
+    reduce(v);
+    cout << s << " = " << v.at(0) << endl; 
     return 0;
 }
